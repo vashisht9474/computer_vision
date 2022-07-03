@@ -1,0 +1,73 @@
+import cv2
+
+import clx.xms
+import requests
+# By creating an account in sinch sms You can get your code.
+# code for sms starts here
+#client is a object that carries your unique token.
+client = clx.xms.Client(service_plan_id='e34a03f83cc541a79e16c1598cc76b1c',
+                        token='6e5dc89792c64127b8869a1bca0d3722')
+ 
+create = clx.xms.api.MtBatchTextSmsCreate()
+create.sender = '+447520650855'
+create.recipients = {'9877965462'}
+create.body = 'This is a test message from your Sinch account'
+
+# Enable camera
+cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)
+counter=0
+cap.set(3, 640)
+cap.set(4, 420)
+
+# import cascade file for facial recognition
+faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+# if you want to detect any object for example eyes, use one more layer of classifier as below:
+eyeCascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_eye_tree_eyeglasses.xml")
+
+
+while True:
+    success, img = cap.read()
+    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Getting corners around the face
+    faces = faceCascade.detectMultiScale(imgGray, 1.3, 5)  # 1.3 = scale factor, 5 = minimum neighbor
+    # drawing bounding box around face
+    for face in faces:
+        x, y, w, h = face
+            # if there is any face and counter is zero then only it will send notification to the sender
+        if(face.any() and counter==0):
+            #url = "https://verificationapi-v1.sinch.com/verification/v1/verifications"
+            #payload="{\n  \"identity\": {\n  \"type\": \"number\",\n  \"endpoint\": \"+919877965462\"\n  },\n  \"method\": \"flashcall\"\n}"
+            #headers = {
+            #Content-Type': 'application/json',
+            #'Authorization': 'Basic NzhhMWJhMTQtZjMwMi00ZWNkLWIyM2EtY2Q5ZmVmMzlmZmM1OldiTThUYjB0ZmtlTkJEamQ5YTEzNVE9PQ=='
+            #}
+            #response = requests.request("POST", url, headers=headers, data=payload)
+            #print(response.json())
+            url = "https://verificationapi-v1.sinch.com/verification/v1/verifications"
+            payload="{\n  \"identity\": {\n  \"type\": \"number\",\n  \"endpoint\": \"+919877965462\"\n  },\n  \"method\": \"sms\"\n}"
+            headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic NzhhMWJhMTQtZjMwMi00ZWNkLWIyM2EtY2Q5ZmVmMzlmZmM1OldiTThUYjB0ZmtlTkJEamQ5YTEzNVE9PQ=='
+            }
+            response = requests.request("POST", url, headers=headers, data=payload)
+
+            print(response.json())
+            
+        img = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+    
+    # detecting eyes
+    eyes = eyeCascade.detectMultiScale(imgGray)
+    # drawing bounding box for eyes
+    for (ex, ey, ew, eh) in eyes:
+        img = cv2.rectangle(img, (ex, ey), (ex+ew, ey+eh), (0, 0, 255), 3)
+    
+
+    cv2.imshow('face_detect', img)
+    counter=1
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
+cap.release()
+cv2.destroyWindow('face_detect')
