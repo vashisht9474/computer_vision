@@ -1,4 +1,5 @@
 # computer_vision
+mermaid
 
 graph TD;
 
